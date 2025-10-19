@@ -1,0 +1,88 @@
+version: "3.8"
+
+services:
+  # MariaDB Database
+  mariadb:
+    image: mariadb:10.11
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --max-allowed-packet=256M
+      - --innodb-buffer-pool-size=512M
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-changeme123}
+      MYSQL_DATABASE: frappe
+      MYSQL_USER: frappe
+      MYSQL_PASSWORD: ${DB_PASSWORD:-changeme123}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Frappe HRMS Application
+  hrms:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      DB_HOST: mariadb
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-changeme123}
+      
+      # Redis Configuration
+      REDIS_HOST: redis
+      
+      # Site Configuration
+      SITE_NAME: ${SITE_NAME:-hrms.localhost}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
+      
+      # App Configuration
+      DEVELOPER_MODE: ${DEVELOPER_MODE:-0}
+      
+      # Optional: Email Configuration
+      MAIL_SERVER: ${MAIL_SERVER:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USE_TLS: ${MAIL_USE_TLS:-1}
+      MAIL_LOGIN: ${MAIL_LOGIN:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+    ports:
+      - "${APP_PORT:-8000}:8000"
+      - "${SOCKETIO_PORT:-9000}:9000"
+    volumes:
+      - hrms-sites:/home/frappe/frappe-bench/sites
+      - hrms-logs:/home/frappe/frappe-bench/logs
+    restart: unless-stopped
+
+volumes:
+  mariadb-data:
+    driver: local
+  redis-data:
+    driver: local
+  hrms-sites:
+    driver: local
+  hrms-logs:
+    driver: local
