@@ -25,6 +25,10 @@ bench set-config -g redis_cache "redis://${REDIS_HOST:-redis}:6379"
 bench set-config -g redis_queue "redis://${REDIS_HOST:-redis}:6379"
 bench set-config -g redis_socketio "redis://${REDIS_HOST:-redis}:6379"
 
+# Disable redis and watch in Procfile (using external services)
+sed -i '/^redis/d' ./Procfile
+sed -i '/^watch/d' ./Procfile
+
 # Check if site exists
 SITE_NAME="${SITE_NAME:-hrms.localhost}"
 

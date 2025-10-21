@@ -40,14 +40,6 @@ RUN bench build --app frappe && \
 # Production stage
 FROM frappe/bench:latest
 
-USER root
-
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
-    supervisor \
-    nginx \
-    && rm -rf /var/lib/apt/lists/*
-
 USER frappe
 
 WORKDIR /home/frappe
@@ -57,9 +49,7 @@ COPY --chown=frappe:frappe --from=builder /home/frappe/frappe-bench /home/frappe
 
 WORKDIR /home/frappe/frappe-bench
 
-# Copy custom configs
-COPY --chown=frappe:frappe docker/supervisor.conf /etc/supervisor/conf.d/frappe.conf
-COPY --chown=frappe:frappe docker/nginx.conf /etc/nginx/nginx.conf
+# Copy entrypoint script
 COPY --chown=frappe:frappe docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 USER root
@@ -67,7 +57,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 USER frappe
 
-# Expose ports
+# Expose ports - internal container ports (mapped externally via docker-compose)
 EXPOSE 8000 9000
 
 # Health check
@@ -75,4 +65,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD bench --site all list || exit 1
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+CMD ["bench", "start"]

@@ -41,6 +41,8 @@ ADMIN_PASSWORD=your_admin_password
 **Optional:**
 ```
 DEVELOPER_MODE=0
+
+# Port Configuration (change if needed)
 APP_PORT=8000
 SOCKETIO_PORT=9000
 
@@ -57,7 +59,11 @@ MAIL_PASSWORD=your-app-password
 1. Go to **Domains** section in your application
 2. Add your domain: `hrms.yourdomain.com`
 3. Enable **HTTPS** (Coolify will auto-provision SSL certificates)
-4. Port: `8000` (or your custom APP_PORT)
+4. **Port Mapping**: Set the port to match your `APP_PORT` environment variable (default: `8000`)
+   - Main application: Uses `APP_PORT` (default 8000)
+   - WebSocket/SocketIO: Uses `SOCKETIO_PORT` (default 9000)
+   
+**Note**: In Coolify, you typically only expose the main APP_PORT. The SOCKETIO_PORT is used internally for real-time features.
 
 ### 5. Persistent Storage
 
@@ -151,9 +157,13 @@ To handle more load:
 
 ### Site not accessible
 
-1. Verify domain configuration
-2. Check if SSL certificate was provisioned
-3. Ensure port 8000 is exposed correctly
+1. **Verify domain configuration** in Coolify
+2. **Check port mapping**: Ensure Coolify domain is pointing to your `APP_PORT` (default 8000)
+3. **Check if SSL certificate was provisioned** (may take a few minutes)
+4. **Verify DNS**: Ensure your domain DNS is pointing to Coolify server IP
+5. **Check container logs** in Coolify for startup errors
+6. **Test with IP**: Try accessing via `http://SERVER_IP:APP_PORT` first
+7. **Check if site was created**: Look for "Site created successfully" in logs
 
 ### Performance issues
 
