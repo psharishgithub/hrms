@@ -57,11 +57,30 @@ if [ ! -d "sites/${SITE_NAME}" ]; then
   bench --site "${SITE_NAME}" set-config developer_mode "${DEVELOPER_MODE:-0}"
   bench --site "${SITE_NAME}" set-config allow_cors "*"
   
-  # Build assets for the site
-  echo "Building assets..."
-  bench build --production --app frappe
-  bench build --production --app erpnext
-  bench build --production --app hrms
+  # Build HRMS frontend apps (PWA and Roster) if they exist
+  echo "Building HRMS frontend apps..."
+  cd /home/frappe/frappe-bench/apps/hrms
+  if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+    echo "Building HRMS PWA..."
+    cd frontend && (yarn install --check-files && yarn build) || (npm install && npm run build)
+    cd ..
+  fi
+  if [ -d "roster" ] && [ -f "roster/package.json" ]; then
+    echo "Building HRMS Roster..."
+    cd roster && (yarn install --check-files && yarn build) || (npm install && npm run build)
+    cd ..
+  fi
+  cd /home/frappe/frappe-bench
+  
+  # Build Frappe/ERPNext/HRMS assets
+  echo "Building Frappe assets..."
+  bench build --app frappe
+  
+  echo "Building ERPNext assets..."
+  bench build --app erpnext
+  
+  echo "Building HRMS assets..."
+  bench build --app hrms
   
   # Setup assets symlinks for the site
   bench setup nginx --yes
@@ -75,11 +94,26 @@ else
   echo "Site ${SITE_NAME} already exists, skipping creation..."
   bench use "${SITE_NAME}"
   
-  # Rebuild assets in case of updates
+  # Build HRMS frontend apps if they exist
+  echo "Building HRMS frontend apps..."
+  cd /home/frappe/frappe-bench/apps/hrms
+  if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+    echo "Building HRMS PWA..."
+    cd frontend && (yarn install --check-files && yarn build) || (npm install && npm run build)
+    cd ..
+  fi
+  if [ -d "roster" ] && [ -f "roster/package.json" ]; then
+    echo "Building HRMS Roster..."
+    cd roster && (yarn install --check-files && yarn build) || (npm install && npm run build)
+    cd ..
+  fi
+  cd /home/frappe/frappe-bench
+  
+  # Rebuild Frappe/ERPNext/HRMS assets
   echo "Rebuilding assets..."
-  bench build --production --app frappe
-  bench build --production --app erpnext
-  bench build --production --app hrms
+  bench build --app frappe
+  bench build --app erpnext
+  bench build --app hrms
   
   # Setup assets symlinks
   bench setup nginx --yes
