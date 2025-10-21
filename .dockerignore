@@ -9,9 +9,14 @@ LICENSE
 CODE_OF_CONDUCT.md
 .github
 
-# Node modules
+# Node modules (but keep package.json and lock files)
 node_modules
 **/node_modules
+!frontend/package.json
+!roster/package.json
+!package.json
+!yarn.lock
+!package-lock.json
 
 # Python cache
 __pycache__

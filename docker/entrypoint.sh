@@ -57,6 +57,16 @@ if [ ! -d "sites/${SITE_NAME}" ]; then
   bench --site "${SITE_NAME}" set-config developer_mode "${DEVELOPER_MODE:-0}"
   bench --site "${SITE_NAME}" set-config allow_cors "*"
   
+  # Build assets for the site
+  echo "Building assets..."
+  bench build --production --app frappe
+  bench build --production --app erpnext
+  bench build --production --app hrms
+  
+  # Setup assets symlinks for the site
+  bench setup nginx --yes
+  bench setup socketio --yes
+  
   # Clear cache
   bench --site "${SITE_NAME}" clear-cache
   
@@ -65,10 +75,26 @@ else
   echo "Site ${SITE_NAME} already exists, skipping creation..."
   bench use "${SITE_NAME}"
   
+  # Rebuild assets in case of updates
+  echo "Rebuilding assets..."
+  bench build --production --app frappe
+  bench build --production --app erpnext
+  bench build --production --app hrms
+  
+  # Setup assets symlinks
+  bench setup nginx --yes
+  bench setup socketio --yes
+  
   # Migrate if needed
   bench --site "${SITE_NAME}" migrate
   bench --site "${SITE_NAME}" clear-cache
 fi
+
+# Ensure assets are accessible
+echo "Verifying assets..."
+ls -la /home/frappe/frappe-bench/sites/assets/ | head -20
+
+echo "Starting Frappe HRMS..."
 
 # Execute the main command
 exec "$@"

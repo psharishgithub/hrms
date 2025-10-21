@@ -32,10 +32,27 @@ WORKDIR /home/frappe/frappe-bench
 RUN bench get-app --branch ${ERPNEXT_BRANCH} erpnext && \
     bench get-app --branch ${HRMS_BRANCH} hrms
 
-# Build frontend assets
-RUN bench build --app frappe && \
-    bench build --app erpnext && \
-    bench build --app hrms
+# Install Node.js dependencies for HRMS frontend apps
+WORKDIR /home/frappe/frappe-bench/apps/hrms
+RUN if [ -f "package.json" ]; then yarn install --check-files || npm install; fi
+RUN if [ -d "frontend" ]; then cd frontend && yarn install --check-files || npm install; fi
+RUN if [ -d "roster" ]; then cd roster && yarn install --check-files || npm install; fi
+
+# Build HRMS frontend apps (PWA and Roster)
+RUN if [ -d "frontend" ]; then cd frontend && yarn build || npm run build; fi
+RUN if [ -d "roster" ]; then cd roster && yarn build || npm run build; fi
+
+WORKDIR /home/frappe/frappe-bench
+
+# Build frontend assets - force production build
+RUN bench setup requirements && \
+    bench clear-cache && \
+    bench build --production --app frappe && \
+    bench build --production --app erpnext && \
+    bench build --production --app hrms
+
+# Verify assets were built
+RUN ls -la /home/frappe/frappe-bench/sites/assets/ || echo "Warning: assets directory not found"
 
 # Production stage
 FROM frappe/bench:latest
